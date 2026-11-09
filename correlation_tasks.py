@@ -5,11 +5,24 @@ from grader_contracts.correlation_tasks import BrainCorrelationSummary, BrainDat
 
 
 def analyze_brain_correlations(data: BrainDataInput) -> BrainCorrelationSummary:
-    """Проанализируйте brainsize.txt.
-
-    Разделите наблюдения по полу и для каждой группы вычислите корреляции
-    признаков FSIQ, VIQ, PIQ, Weight, Height с MRI_Count методом Пирсона.
-    В strongest_mri_feature верните название признака с наибольшим модулем
-    корреляции с MRI_Count среди объединённых результатов двух групп.
-    """
-    raise NotImplementedError
+    df = pd.read_csv(data.path, sep=r'\s+')
+    
+    features = ['FSIQ', 'VIQ', 'PIQ', 'Weight', 'Height']
+    correlations = {}
+    strongest_mri_feature = None
+    max_abs_corr = -1
+    
+    for gender, group in df.groupby('Gender'):
+        correlations[gender] = {}
+        for feature in features:
+            corr = group[feature].corr(group['MRI_Count'])
+            correlations[gender][feature] = corr
+            
+            if pd.notna(corr) and abs(corr) > max_abs_corr:
+                max_abs_corr = abs(corr)
+                strongest_mri_feature = feature
+                
+    return BrainCorrelationSummary(
+        correlations=correlations,
+        strongest_mri_feature=strongest_mri_feature
+    )
